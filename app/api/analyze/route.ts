@@ -85,8 +85,9 @@ ${rawText}
 
     return NextResponse.json(parsed);
 
-  } catch (error: any) {
-    console.error("Error final en análisis:", error.message || error);
-    return NextResponse.json({ error: 'Error processing reviews with validation' }, { status: 500 });
-  }
+  } catch (error) {
+    console.error('Error en análisis con Cohere:', error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: 'Error processing reviews with Cohere' }, { status: 500 });
+    }
+
 }
