@@ -1,103 +1,111 @@
-import Image from "next/image";
+"use client";
+
+import TextInput from "@/components/TextInput";
+import JSONUploader from "@/components/JSONUploader";
+import ReviewCards from "@/components/ReviewCards";
+import SentimentPieChart from "@/components/SentimentPieChart";
+import AttributesBarChart from "@/components/AttributesBarChart";
+import TopicsTreeMap from "@/components/TopicsTreeMap";
+import Suggestions from "@/components/Suggestions";
+import type { AnalysisResult } from "@/components/types";
+
+import { useState } from "react";
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [reviews, setReviews] = useState<string[]>([]);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const handleDelete = (index: number) => {
+    setReviews((prev) => prev.filter((_, i) => i !== index));
+  };
+  const addReview = (review: string) => {
+    setReviews((prev) => [...prev, review]);
+  };
+
+  const analyzeReviews = async (reviews: string[]) => {
+    const res = await fetch("/api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reviews }),
+    });
+
+    const data = await res.json();
+    return data;
+  };
+
+  const handleAnalyze = async () => {
+    try {
+      const result = await analyzeReviews(reviews);
+      console.log("Resultado del análisis:", result);
+      // Aquí podrías guardar los resultados en un estado
+      setAnalysisResult(result);
+    } catch (error) {
+      console.error("Error al analizar reseñas:", error);
+    }
+  };
+
+  return (
+    <main className="overflow-x-hidden text-neutral-800 antialiased min-h-screen flex flex-col items-center pt-12">
+      {/* Fondo degradado pastel */}
+      <div className="fixed top-0 -z-10 h-full w-full">
+        <div className="h-screen w-screen bg-gradient-to-br from-blue-100 via-white to-cyan-100"></div>
+      </div>
+
+      {/* Título */}
+      <h1 className="text-4xl font-bold mb-6">Review Analyzer</h1>
+
+      {/* Sección de entrada de texto y subida de JSON */}
+      <div className="flex flex-col md:flex-row items-center gap-4 mb-10">
+        <TextInput onAddReview={addReview} />
+        <JSONUploader onLoadReviews={setReviews} />
+      </div>
+
+      {/* Reseñas */}
+      <section className="w-full max-w-6xl text-center mb-16">
+        <h2 className="text-2xl font-semibold mb-4">Reviews</h2>
+        <ReviewCards reviews={reviews} onDelete={handleDelete} />
+        <button
+          onClick={handleAnalyze}
+          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+        >
+          Analyze Reviews
+        </button>
+
+      </section>
+
+      {/* Gráficas */}
+      <section className="w-full max-w-6xl text-center mb-16">
+        <h2 className="text-2xl font-semibold mb-6">Graphs</h2>
+        <div className="flex flex-wrap justify-center gap-6 px-4">
+          {analysisResult && (
+            <>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="aspect-square bg-white rounded-lg shadow-md p-4 flex flex-col items-center justify-center">
+                  <h2 className="text-2xl font-semibold mb-4">Sentiments Pie Chart</h2>
+                  <SentimentPieChart data={analysisResult.sentiment} />
+                </div>
+                <div className="aspect-square bg-white rounded-lg shadow-md p-4 flex flex-col items-center justify-center">
+                  <h2 className="text-2xl font-semibold mb-4">Attributes Bar Chart</h2>
+                  <AttributesBarChart data={analysisResult.attributes} />
+                </div>
+                <div className="col-span-2 aspect-video bg-white rounded-lg shadow-md p-4 flex flex-col items-center justify-center">
+                  <h2 className="text-2xl font-semibold mb-4">Topics Tree Map</h2>
+                  <TopicsTreeMap data={analysisResult.topics} />
+                </div>
+              </div>
+              
+            </>
+          )}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </section>
+
+      {/* Insights */}
+      <section className="w-full max-w-6xl text-center mb-24">
+        <h2 className="text-2xl font-semibold mb-6">Suggestions</h2>
+        <div className="flex flex-wrap justify-center gap-6 px-4">
+          <Suggestions suggestions={analysisResult?.suggestions || []} />
+        </div>
+      </section>
+    </main>
   );
 }
